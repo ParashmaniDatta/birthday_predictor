@@ -14,6 +14,7 @@ let mid = Math.floor((low + high) / 2);
 let finished = false;
 let queryCount = 0;
 let isListening = false;
+let voicesReady = false;
 
 // DOM elements
 const questionEl = document.getElementById('question');
@@ -156,7 +157,12 @@ if (previewVoiceBtn) {
 if (typeof speechSynthesis !== 'undefined') {
     populateVoiceList();
     choosePreferredVoice();
-    speechSynthesis.onvoiceschanged = () => { populateVoiceList(); choosePreferredVoice(); };
+    voicesReady = true; // mark ready after initial load
+    speechSynthesis.onvoiceschanged = () => { 
+        populateVoiceList(); 
+        choosePreferredVoice(); 
+        voicesReady = true;
+    };
 }
 
 // Parse date from spoken text (e.g., "26 october" or "26 oct")
@@ -260,6 +266,13 @@ function processAnswer(ansText) {
 
 // Start a new game
 function startGame() {
+    // If voices not yet loaded, wait a bit and try again
+    if (!voicesReady) {
+        statusEl.textContent = 'Loading voices... please wait.';
+        setTimeout(startGame, 500);
+        return;
+    }
+
     low = 0;
     high = dates.length - 1;
     mid = Math.floor((low + high) / 2);
