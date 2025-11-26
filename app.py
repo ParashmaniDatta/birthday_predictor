@@ -9,6 +9,58 @@ import calendar
 # ---------------- Voice Engine ----------------
 engine = pyttsx3.init()
 
+# Prefer an Indian-sounding, sweeter voice when available and adjust rate/volume
+try:
+    voices = engine.getProperty('voices')
+    preferred = None
+    # tokens that hint at Indian voices or languages
+    indian_tokens = ('india', 'indian', 'en-in', 'hindi', 'hind')
+    for v in voices:
+        # voice.name may be None on some platforms
+        name = getattr(v, 'name', '') or ''
+        n = name.lower()
+        # try matching tokens in name
+        if any(tok in n for tok in indian_tokens):
+            preferred = v
+            break
+
+    # if not found, try languages property
+    if preferred is None:
+        for v in voices:
+            if hasattr(v, 'languages') and v.languages:
+                lang = ''.join(v.languages).lower()
+                if any(tok in lang for tok in indian_tokens):
+                    preferred = v
+                    break
+
+    # fallback: female-like names
+    if preferred is None:
+        for v in voices:
+            n = (getattr(v, 'name', '') or '').lower()
+            if any(k in n for k in ('samantha', 'zira', 'allison', 'female', 'karen')):
+                preferred = v
+                break
+
+    if preferred:
+        engine.setProperty('voice', preferred.id)
+
+    # make the voice slightly sweeter: slightly slower and full volume
+    try:
+        rate = engine.getProperty('rate')
+        engine.setProperty('rate', max(110, int(rate * 0.9)))
+    except Exception:
+        try:
+            engine.setProperty('rate', 130)
+        except Exception:
+            pass
+    try:
+        engine.setProperty('volume', 1.0)
+    except Exception:
+        pass
+except Exception:
+    pass
+
+
 def speak(text):
     engine.say(text)
     engine.runAndWait()

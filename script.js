@@ -68,8 +68,51 @@ function formatDate(d) {
 // Speak text using Web Speech API
 function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
+    // prefer a sweeter, female-sounding voice when available
+    if (selectedVoice) utterance.voice = selectedVoice;
+    // slightly higher pitch and a gentle pace
+    utterance.pitch = 1.2;
+    utterance.rate = 0.95;
     speechSynthesis.speak(utterance);
+}
+
+// Select a preferred voice (female-like) from available voices
+let selectedVoice = null;
+function choosePreferredVoice() {
+    const voices = speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return;
+
+    // Prefer Indian English voices first (en-IN) or voice names containing 'india'/'indian'
+    // Then prefer common female voice names as a fallback
+    const preferredIndianTokens = ['india', 'indian', 'en-in', 'hi-in', 'hindi'];
+    for (const v of voices) {
+        const lname = (v.lang || '').toLowerCase();
+        const n = (v.name || '').toLowerCase();
+        if (preferredIndianTokens.some(t => lname.includes(t) || n.includes(t))) {
+            selectedVoice = v; return;
+        }
+    }
+
+    // fallback female-preference order
+    const preferredNames = [
+        'samantha', 'zira', 'karen', 'allison', 'google', 'female'
+    ];
+    for (const p of preferredNames) {
+        const found = voices.find(v => v.name && v.name.toLowerCase().includes(p));
+        if (found) { selectedVoice = found; return; }
+    }
+
+    // otherwise pick a voice with English lang, prefer en-GB/en-US, then any
+    const enIn = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-in'));
+    if (enIn) { selectedVoice = enIn; return; }
+    const en = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+    selectedVoice = en || voices[0];
+}
+
+// voices may load asynchronously
+if (typeof speechSynthesis !== 'undefined') {
+    choosePreferredVoice();
+    speechSynthesis.onvoiceschanged = () => { choosePreferredVoice(); };
 }
 
 // Parse date from spoken text (e.g., "26 october" or "26 oct")
