@@ -155,9 +155,20 @@ if (previewVoiceBtn) {
 
 // voices may load asynchronously
 if (typeof speechSynthesis !== 'undefined') {
-    populateVoiceList();
-    choosePreferredVoice();
-    voicesReady = true; // mark ready after initial load
+    // Load voices asynchronously and mark ready when done
+    const initVoices = () => {
+        const voices = speechSynthesis.getVoices();
+        if (voices && voices.length > 0) {
+            populateVoiceList();
+            choosePreferredVoice();
+            voicesReady = true;
+        } else {
+            // Voices not yet loaded, retry
+            setTimeout(initVoices, 100);
+        }
+    };
+    initVoices();
+    
     speechSynthesis.onvoiceschanged = () => { 
         populateVoiceList(); 
         choosePreferredVoice(); 
@@ -220,7 +231,15 @@ function askQuestion() {
     const currentDate = dates[mid];
     const q = `Is your birthday on or before ${formatDate(currentDate)}? Say yes or no.`;
     questionEl.textContent = q;
-    speak(q);
+    
+    // Only speak and show question if voices are ready
+    if (voicesReady) {
+        speak(q);
+    } else {
+        // If voices still not loaded, show placeholder and retry
+        questionEl.textContent = 'Initializing voices...';
+        setTimeout(askQuestion, 300);
+    }
 }
 
 // Process the answer (yes/no or direct date)
@@ -268,7 +287,8 @@ function processAnswer(ansText) {
 function startGame() {
     // If voices not yet loaded, wait a bit and try again
     if (!voicesReady) {
-        statusEl.textContent = 'Loading voices... please wait.';
+        questionEl.textContent = 'Loading voices... Please wait.';
+        statusEl.textContent = 'Initializing TTS...';
         setTimeout(startGame, 500);
         return;
     }
