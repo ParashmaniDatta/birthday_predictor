@@ -23,6 +23,8 @@ const startBtn = document.getElementById('startBtn');
 const voiceBtn = document.getElementById('voiceBtn');
 const yesBtn = document.getElementById('yesBtn');
 const noBtn = document.getElementById('noBtn');
+const voiceSelect = document.getElementById('voiceSelect');
+const previewVoiceBtn = document.getElementById('previewVoice');
 
 // Speech recognition setup
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -82,6 +84,13 @@ function choosePreferredVoice() {
     const voices = speechSynthesis.getVoices();
     if (!voices || voices.length === 0) return;
 
+    // If user previously selected a voice, prefer that
+    const saved = localStorage.getItem('preferredVoiceName');
+    if (saved) {
+        const foundSaved = voices.find(v => v.name === saved || v.voiceURI === saved);
+        if (foundSaved) { selectedVoice = foundSaved; return; }
+    }
+
     // Prefer Indian English voices first (en-IN) or voice names containing 'india'/'indian'
     // Then prefer common female voice names as a fallback
     const preferredIndianTokens = ['india', 'indian', 'en-in', 'hi-in', 'hindi'];
@@ -109,10 +118,45 @@ function choosePreferredVoice() {
     selectedVoice = en || voices[0];
 }
 
+function populateVoiceList() {
+    const voices = speechSynthesis.getVoices() || [];
+    if (!voiceSelect) return;
+    // clear
+    voiceSelect.innerHTML = '';
+    const saved = localStorage.getItem('preferredVoiceName');
+    voices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name || v.voiceURI || `${v.lang}-${v.name}`;
+        opt.textContent = `${v.name} — ${v.lang}`;
+        if (saved && (v.name === saved || v.voiceURI === saved)) opt.selected = true;
+        voiceSelect.appendChild(opt);
+    });
+}
+
+// When user selects a voice from the dropdown
+if (voiceSelect) {
+    voiceSelect.addEventListener('change', () => {
+        const voices = speechSynthesis.getVoices() || [];
+        const sel = voiceSelect.value;
+        const found = voices.find(v => v.name === sel || v.voiceURI === sel);
+        if (found) {
+            selectedVoice = found;
+            localStorage.setItem('preferredVoiceName', found.name || found.voiceURI);
+        }
+    });
+}
+
+if (previewVoiceBtn) {
+    previewVoiceBtn.addEventListener('click', () => {
+        speak('Hello! This is a preview of the selected voice.');
+    });
+}
+
 // voices may load asynchronously
 if (typeof speechSynthesis !== 'undefined') {
+    populateVoiceList();
     choosePreferredVoice();
-    speechSynthesis.onvoiceschanged = () => { choosePreferredVoice(); };
+    speechSynthesis.onvoiceschanged = () => { populateVoiceList(); choosePreferredVoice(); };
 }
 
 // Parse date from spoken text (e.g., "26 october" or "26 oct")

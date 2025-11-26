@@ -151,6 +151,34 @@ h1 {
     word-wrap: break-word;
 }
 
+.voice-picker {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    margin: 12px 0;
+}
+
+.voice-picker label {
+    font-size: 14px;
+    color: #333;
+}
+
+#voiceSelect {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    min-width: 200px;
+}
+
+#previewVoice {
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #667eea;
+    color: #fff;
+    border: none;
+}
+
 @media (max-width: 600px) {
     .container {
         padding: 20px;
